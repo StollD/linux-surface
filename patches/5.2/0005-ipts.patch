@@ -1,4 +1,4 @@
-From 22b395cfcf4f06dba6d65d2ff2682731a9b42191 Mon Sep 17 00:00:00 2001
+From a3dc9393cffe8d9657867fbf4e67806fd7eaac31 Mon Sep 17 00:00:00 2001
 From: Maximilian Luz <luzmaximilian@gmail.com>
 Date: Fri, 26 Jul 2019 04:45:32 +0200
 Subject: [PATCH 05/12] ipts
@@ -28,11 +28,11 @@ Subject: [PATCH 05/12] ipts
  drivers/misc/ipts/Makefile                  |   13 +
  drivers/misc/ipts/ipts-binary-spec.h        |  118 ++
  drivers/misc/ipts/ipts-dbgfs.c              |  364 ++++++
- drivers/misc/ipts/ipts-gfx.c                |  185 +++
+ drivers/misc/ipts/ipts-gfx.c                |  185 ++++
  drivers/misc/ipts/ipts-gfx.h                |   24 +
  drivers/misc/ipts/ipts-hid.c                |  456 ++++++++
  drivers/misc/ipts/ipts-hid.h                |   34 +
- drivers/misc/ipts/ipts-kernel.c             | 1118 +++++++++++++++++++
+ drivers/misc/ipts/ipts-kernel.c             | 1095 +++++++++++++++++++
  drivers/misc/ipts/ipts-kernel.h             |   23 +
  drivers/misc/ipts/ipts-mei-msgs.h           |  585 ++++++++++
  drivers/misc/ipts/ipts-mei.c                |  282 +++++
@@ -46,7 +46,7 @@ Subject: [PATCH 05/12] ipts
  drivers/misc/mei/hw-me-regs.h               |    1 +
  drivers/misc/mei/pci-me.c                   |    1 +
  include/linux/intel_ipts_if.h               |   76 ++
- 42 files changed, 5914 insertions(+), 26 deletions(-)
+ 42 files changed, 5891 insertions(+), 26 deletions(-)
  create mode 100644 drivers/gpu/drm/i915/intel_ipts.c
  create mode 100644 drivers/gpu/drm/i915/intel_ipts.h
  create mode 100644 drivers/misc/ipts/Kconfig
@@ -2638,16 +2638,15 @@ index 000000000000..f1b22c912df7
 +#endif /* _IPTS_HID_H_ */
 diff --git a/drivers/misc/ipts/ipts-kernel.c b/drivers/misc/ipts/ipts-kernel.c
 new file mode 100644
-index 000000000000..4bf68c271476
+index 000000000000..2cbb531c1074
 --- /dev/null
 +++ b/drivers/misc/ipts/ipts-kernel.c
-@@ -0,0 +1,1118 @@
-+#include <linux/dmi.h>
+@@ -0,0 +1,1095 @@
++#include <linux/acpi.h>
 +#include <linux/module.h>
 +#include <linux/firmware.h>
 +#include <linux/vmalloc.h>
 +#include <linux/intel_ipts_if.h>
-+#include <linux/string.h>
 +
 +#include "ipts.h"
 +#include "ipts-resource.h"
@@ -2740,9 +2739,11 @@ index 000000000000..4bf68c271476
 +#define SBA_OFFSET_BYTES			16384
 +#define LASTSUBMITID_DEFAULT_VALUE		-1
 +
++// This is a dummy device, but it reports a _HID that corresponds
++// to the version of the IPTS firmware that is required.
++#define IPTS_MSHW_ACPI_PATH       "\\_SB.TSML"
 +#define IPTS_FW_PATH_FMT          "intel/ipts/%s"
-+#define IPTS_FW_PATH_FMT_NAME     "intel/ipts/%s/%s"
-+#define IPTS_FW_PATH_FMT_NAME_SKU "intel/ipts/%s/%s/%s"
++#define IPTS_FW_PATH_FMT_MSHW     "intel/ipts/%s/%s"
 +#define IPTS_FW_CONFIG_FILE       "ipts_fw_config.bin"
 +
 +#define IPTS_INPUT_ON				((u32)1 << IPTS_INPUT)
@@ -2754,44 +2755,32 @@ index 000000000000..4bf68c271476
 +#define	DATA_FILE_FLAG_SHARE			0x00000001
 +#define	DATA_FILE_FLAG_ALLOC_CONTIGUOUS		0x00000002
 +
-+static char *ipts_string_escape(const char *src, const char *esc)
-+{
-+	char *out;
-+	int len;
-+	int i;
-+
-+	len = strlen(src);
-+	out = kmalloc(len + 1, GFP_KERNEL);
-+
-+	for (i = 0; i < len; i++) {
-+		if (strchr(esc, src[i])) {
-+			out[i] = '_';
-+		} else {
-+			out[i] = src[i];
-+		}
-+	}
-+	out[len] = '\0';
-+
-+	return out;
-+}
-+
 +int ipts_request_firmware(ipts_info_t *ipts, const struct firmware **fw,
 +	const char *name, struct device *device)
 +{
 +	char fw_path[MAX_IOCL_FILE_PATH_LEN];
-+	char *dmi_product_name;
-+	char *dmi_product_sku;
 +	int ret = 0;
 +
-+	/* Fetch DMI info */
-+	dmi_product_name = ipts_string_escape(
-+		dmi_get_system_info(DMI_PRODUCT_NAME), " ");
-+	dmi_product_sku = ipts_string_escape(
-+		dmi_get_system_info(DMI_PRODUCT_SKU), " ");
++	acpi_handle handle;
++	acpi_status status;
++	struct acpi_device_info *info;
 +
-+	/* Try to find a firmware for DMI_PRODUCT_NAME + SKU */
-+	snprintf(fw_path, MAX_IOCL_FILE_PATH_LEN, IPTS_FW_PATH_FMT_NAME_SKU,
-+		dmi_product_name, dmi_product_sku, name);
++	status = acpi_get_handle(ACPI_ROOT_OBJECT, IPTS_MSHW_ACPI_PATH, &handle);
++	if (ACPI_FAILURE(status)) {
++		ipts_dbg(ipts, "Unable to find ACPI device %s: %d\n",
++			IPTS_MSHW_ACPI_PATH, status);
++		goto ipts_load_default_fw_path;
++	}
++
++	status = acpi_get_object_info(handle, &info);
++	if (ACPI_FAILURE(status)) {
++		ipts_dbg(ipts, "Unable to find ACPI info for device %s: %d\n",
++			IPTS_MSHW_ACPI_PATH, status);
++		goto ipts_load_default_fw_path;
++	}
++
++	snprintf(fw_path, MAX_IOCL_FILE_PATH_LEN, IPTS_FW_PATH_FMT_MSHW,
++		info->hardware_id.string, name);
 +	ret = firmware_request_nowarn(fw, fw_path, device);
 +	if (!ret) {
 +		goto ipts_request_firmware_return;
@@ -2800,25 +2789,13 @@ index 000000000000..4bf68c271476
 +	ipts_dbg(ipts, "no firmware '%s' found, retrying with more generic path\n",
 +		fw_path);
 +
-+	/* No firmware was found for DMI_PRODUCT_NAME + SKU, try only name now */
-+	snprintf(fw_path, MAX_IOCL_FILE_PATH_LEN, IPTS_FW_PATH_FMT_NAME,
-+		dmi_product_name, name);
-+	ret = firmware_request_nowarn(fw, fw_path, device);
-+	if (!ret) {
-+		goto ipts_request_firmware_return;
-+	}
-+
-+	ipts_dbg(ipts, "no firmware '%s' found, retrying with more generic path\n",
-+		fw_path);
++ipts_load_default_fw_path:
 +
 +	/* No firmware was found for DMI_PRODUCT_NAME, try without DMI parameters */
 +	snprintf(fw_path, MAX_IOCL_FILE_PATH_LEN, IPTS_FW_PATH_FMT, name);
 +	ret = request_firmware(fw, fw_path, device);
 +
 +ipts_request_firmware_return:
-+
-+	kfree(dmi_product_name);
-+	kfree(dmi_product_sku);
 +
 +	return ret;
 +}
