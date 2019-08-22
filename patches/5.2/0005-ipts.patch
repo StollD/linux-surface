@@ -1,4 +1,4 @@
-From 31adcd4032fccb3b6ded1a9e867c48dcda554a7f Mon Sep 17 00:00:00 2001
+From 611ebcecffc69d1b323daa4955fd4fa5c90eca56 Mon Sep 17 00:00:00 2001
 From: Maximilian Luz <luzmaximilian@gmail.com>
 Date: Fri, 26 Jul 2019 04:45:32 +0200
 Subject: [PATCH 05/12] ipts
@@ -2057,7 +2057,7 @@ index 000000000000..7581b21f81e0
 +}
 diff --git a/drivers/misc/ipts/ipts-fw.c b/drivers/misc/ipts/ipts-fw.c
 new file mode 100644
-index 000000000000..584194fe7090
+index 000000000000..6e917e35a5d5
 --- /dev/null
 +++ b/drivers/misc/ipts/ipts-fw.c
 @@ -0,0 +1,103 @@
@@ -2151,7 +2151,7 @@ index 000000000000..584194fe7090
 +
 +	// If fallback loading for firmware was disabled, abort.
 +	// Return -ENOENT as no firmware file was found.
-+	if (!ipts_modparams.firmware_fallback) {
++	if (ipts_modparams.ignore_fw_fallback) {
 +		ret = -ENOENT;
 +		goto ipts_request_firmware_return;
 +	}
@@ -5356,7 +5356,7 @@ index 000000000000..f37d9ad9af8c
 +#endif /* _IPTS_MSG_HANDLER_H */
 diff --git a/drivers/misc/ipts/ipts-params.c b/drivers/misc/ipts/ipts-params.c
 new file mode 100644
-index 000000000000..c8723f55e7b2
+index 000000000000..17374039a161
 --- /dev/null
 +++ b/drivers/misc/ipts/ipts-params.c
 @@ -0,0 +1,14 @@
@@ -5365,18 +5365,18 @@ index 000000000000..c8723f55e7b2
 +#include "ipts-params.h"
 +
 +struct ipts_params ipts_modparams = {
-+	.firmware_fallback = true,
++	.ignore_fw_fallback = false,
 +	.ignore_companion = false,
 +};
 +
-+module_param_named(firmware_fallback, ipts_modparams.firmware_fallback, bool, 0400);
-+MODULE_PARM_DESC(firmware_fallback, "Use IPTS firmware fallback path");
++module_param_named(ignore_fw_fallback, ipts_modparams.ignore_fw_fallback, bool, 0400);
++MODULE_PARM_DESC(ignore_fw_fallback, "Don't use the IPTS firmware fallback path");
 +
 +module_param_named(ignore_companion, ipts_modparams.ignore_companion, bool, 0400);
 +MODULE_PARM_DESC(ignore_companion, "Don't use a companion driver to load firmware");
 diff --git a/drivers/misc/ipts/ipts-params.h b/drivers/misc/ipts/ipts-params.h
 new file mode 100644
-index 000000000000..1bfc65b476e2
+index 000000000000..d6f6faaef076
 --- /dev/null
 +++ b/drivers/misc/ipts/ipts-params.h
 @@ -0,0 +1,13 @@
@@ -5386,7 +5386,7 @@ index 000000000000..1bfc65b476e2
 +#include <linux/types.h>
 +
 +struct ipts_params {
-+	bool firmware_fallback;
++	bool ignore_fw_fallback;
 +	bool ignore_companion;
 +};
 +
