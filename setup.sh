@@ -93,34 +93,80 @@ fi
 
 echo
 
-echo "Patched libwacom packages are available to better support the pen."
-echo "If you plan to use the pen, it is recommended to install them!"
-if ask "Do you want to install the patched libwacom?" Y; then
-	echo "Installing patched libwacom..."
-	sudo dpkg -i packages/libwacom/*.deb
-	sudo apt-mark hold libwacom
-else
-	echo "Not touching libwacom..."
-fi
-
-echo
-
-if ask "Do you want to download and install the latest kernel?" Y; then
-	echo "Downloading latest kernel..."
-	urls=$(curl --silent "https://api.github.com/repos/qzed/linux-surface/releases/latest" \
-		| tr ',' '\n' | grep '"browser_download_url":' | sed -E 's/.*"([^"]+)".*/\1/'  \
-		| grep '.deb$')
-	wget -P tmp $urls
+# Debian
+if [ -x "$(command -v apt)" ]; then
+	echo "Patched libwacom packages are available to better support the pen."
+	echo "If you plan to use the pen, it is recommended to install them!"
+	if ask "Do you want to install the patched libwacom?" Y; then
+		echo "Installing patched libwacom..."
+		sudo dpkg -i packages/libwacom/*.deb
+		sudo apt-mark hold libwacom
+	else
+		echo "Not touching libwacom..."
+	fi
 
 	echo
 
-	echo "Installing latest kernel..."
-	sudo dpkg -i tmp/*.deb
-	rm -rf tmp
-else
-	echo "Not downloading latest kernel..."
+	if ask "Do you want to download and install the latest kernel?" Y; then
+		echo "Downloading latest kernel..."
+		urls=$(curl --silent "https://api.github.com/repos/qzed/linux-surface/releases/latest" \
+			| tr ',' '\n' | grep '"browser_download_url":' \
+			| sed -E 's/.*"([^"]+)".*/\1/' | grep '.deb$')
+		wget -P tmp $urls
+
+		echo
+
+		echo "Installing latest kernel..."
+		sudo dpkg -i tmp/*.deb
+		rm -rf tmp
+	else
+		echo "Not downloading latest kernel..."
+	fi
+
+	echo
+	echo "All done! Please reboot!"
+	exit
 fi
 
-echo
+# Arch
+if [ -x "$(command -v pacman)" ]; then
+	echo "Patched libwacom packages are available to better support the pen."
+	echo "If you plan to use the pen, it is recommended to install them!"
+	if ask "Do you want to install the patched libwacom?" Y; then
+		if [ -x "$(command -v yay)" ]; then
+			yay -S libwacom-surface
+		else
+			echo "No AUR helper found! Please install it manually" \
+			     "from https://aur.archlinux.org/packages/libwacom-surface"
+		fi
+	else
+		echo "Not touching libwacom..."
+	fi
 
-echo "All done! Please reboot!"
+	echo
+
+	if ask "Do you want to download and install the latest kernel?" Y; then
+		echo "Downloading latest kernel..."
+		urls=$(curl --silent "https://api.github.com/repos/qzed/linux-surface/releases/latest" \
+			| tr ',' '\n' | grep '"browser_download_url":' \
+			| sed -E 's/.*"([^"]+)".*/\1/' | grep '.pkg.tar.xz$')
+		wget -P tmp $urls
+
+		echo
+
+		echo "Installing latest kernel..."
+		sudo dpkg -i tmp/*.pkg.tar.xz
+		rm -rf tmp
+	else
+		echo "Not downloading latest kernel..."
+	fi
+
+	echo
+	echo "All done! Please reboot!"
+	exit
+fi
+
+# If no kernel repository is known, you have to compile it yourself
+echo "For better hardware support, you have to install a patched kernel!"
+echo "However, there doesn't seem to be a known repository for your distribution."
+echo "For instructions on how to compile from source, please refer to the README.md file."
