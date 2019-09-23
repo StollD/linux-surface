@@ -37,9 +37,6 @@ ask() {
     done
 }
 
-SUR_MODEL="$(dmidecode | grep "Product Name" -m 1 | xargs | sed -e 's/Product Name: //g')"
-SUR_SKU="$(dmidecode | grep "SKU Number" -m 1 | xargs | sed -e 's/SKU Number: //g')"
-
 echo "Installing config files..."
 for dir in $(ls root); do
     cp -Rb root/$dir/* /$dir/
@@ -50,6 +47,9 @@ cp -r firmware/* /lib/firmware/
 
 echo "Making /lib/systemd/system-sleep/sleep executable..."
 chmod a+x /lib/systemd/system-sleep/sleep
+
+echo "Enabling power management for Surface Go touchscreen..."
+systemctl enable -q surfacego-touchscreen
 
 echo
 
@@ -78,15 +78,6 @@ if ask "Do you want to remove the example PulseAudio config files?" Y; then
 	rm /etc/pulse/default_example.pa
 else
 	echo "Not touching example PulseAudio config files... (/etc/pulse/*_example.*)"
-fi
-
-if [ "$SUR_MODEL" = "Surface Go" ]; then
-	if [ ! -f "/etc/init.d/surfacego-touchscreen" ]; then
-		echo "Patching power control for Surface Go touchscreen..."
-		echo "echo \"on\" > /sys/devices/pci0000:00/0000:00:15.1/i2c_designware.1/power/control" > /etc/init.d/surfacego-touchscreen
-		chmod 755 /etc/init.d/surfacego-touchscreen
-		update-rc.d surfacego-touchscreen defaults
-	fi
 fi
 
 echo
