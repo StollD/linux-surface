@@ -39,24 +39,24 @@ ask() {
 
 echo "Installing config files..."
 for dir in $(ls root); do
-    cp -Rb root/$dir/* /$dir/
+    sudo cp -Rb root/$dir/* /$dir/
 done
 
 echo "Installing firmware files for IPTS..."
-cp -r firmware/* /lib/firmware/
+sudo cp -r firmware/* /lib/firmware/
 
 echo "Making /lib/systemd/system-sleep/sleep executable..."
-chmod a+x /lib/systemd/system-sleep/sleep
+sudo chmod a+x /lib/systemd/system-sleep/sleep
 
 echo "Enabling power management for Surface Go touchscreen..."
-systemctl enable -q surfacego-touchscreen
+sudo systemctl enable -q surfacego-touchscreen
 
 echo
 
 if ask "Do you want to replace suspend with hibernate?" N; then
 	echo "Using Hibernate instead of Suspend..."
-	ln -sfb /usr/lib/systemd/system/hibernate.target /etc/systemd/system/suspend.target
-	ln -sfb /usr/lib/systemd/system/systemd-hibernate.service /etc/systemd/system/systemd-suspend.service
+	sudo ln -sfb /usr/lib/systemd/system/hibernate.target /etc/systemd/system/suspend.target
+	sudo ln -sfb /usr/lib/systemd/system/systemd-hibernate.service /etc/systemd/system/systemd-suspend.service
 else
 	echo "Not touching Suspend..."
 fi
@@ -67,15 +67,15 @@ echo "This repo comes with example xorg and pulse audio configs."
 echo "If you keep them, rename them and uncomment out what you'd like to keep!"
 if ask "Do you want to remove the example Intel X.org config?" Y; then
 	echo "Removing the example Intel X.org config..."
-	rm /etc/X11/xorg.conf.d/20-intel_example.conf
+	sudo rm /etc/X11/xorg.conf.d/20-intel_example.conf
 else
 	echo "Not touching example Intel X.org config... (/etc/X11/xorg.conf.d/20-intel_example.conf)"
 fi
 
 if ask "Do you want to remove the example PulseAudio config files?" Y; then
 	echo "Removing the example PulseAudio config files..."
-	rm /etc/pulse/daemon_example.conf
-	rm /etc/pulse/default_example.pa
+	sudo rm /etc/pulse/daemon_example.conf
+	sudo rm /etc/pulse/default_example.pa
 else
 	echo "Not touching example PulseAudio config files... (/etc/pulse/*_example.*)"
 fi
@@ -85,8 +85,8 @@ echo
 echo "Setting your clock to local time can fix issues with Windows dualboot."
 if ask "Do you want to set your clock to local time instead of UTC?" N; then
 	echo "Setting clock to local time..."
-	timedatectl set-local-rtc 1
-	hwclock --systohc --localtime
+	sudo timedatectl set-local-rtc 1
+	sudo hwclock --systohc --localtime
 else
 	echo "Not setting clock..."
 fi
@@ -97,8 +97,8 @@ echo "Patched libwacom packages are available to better support the pen."
 echo "If you plan to use the pen, it is recommended to install them!"
 if ask "Do you want to install the patched libwacom?" Y; then
 	echo "Installing patched libwacom..."
-	dpkg -i packages/libwacom/*.deb
-	apt-mark hold libwacom
+	sudo dpkg -i packages/libwacom/*.deb
+	sudo apt-mark hold libwacom
 else
 	echo "Not touching libwacom..."
 fi
@@ -115,7 +115,7 @@ if ask "Do you want to download and install the latest kernel?" Y; then
 	echo
 
 	echo "Installing latest kernel..."
-	dpkg -i tmp/*.deb
+	sudo dpkg -i tmp/*.deb
 	rm -rf tmp
 else
 	echo "Not downloading latest kernel..."
