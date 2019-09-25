@@ -55,8 +55,14 @@ echo
 
 if ask "Do you want to replace suspend with hibernate?" N; then
 	echo "Using Hibernate instead of Suspend..."
-	sudo ln -sfb /usr/lib/systemd/system/hibernate.target /etc/systemd/system/suspend.target
-	sudo ln -sfb /usr/lib/systemd/system/systemd-hibernate.service /etc/systemd/system/systemd-suspend.service
+	if [[ -f "/usr/lib/systemd/system/hibernate.target" ]]; then
+		LIB="/usr/lib"
+	else
+		LIB="/lib"
+	fi
+	echo $LIB
+	sudo ln -sfb $LIB/systemd/system/hibernate.target /etc/systemd/system/suspend.target
+	sudo ln -sfb $LIB/systemd/system/systemd-hibernate.service /etc/systemd/system/systemd-suspend.service
 else
 	echo "Not touching Suspend..."
 fi
