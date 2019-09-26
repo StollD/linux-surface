@@ -55,7 +55,7 @@ echo
 
 if ask "Do you want to replace suspend with hibernate?" N; then
 	echo "Using Hibernate instead of Suspend..."
-	if [[ -f "/usr/lib/systemd/system/hibernate.target" ]]; then
+	if [ -f "/usr/lib/systemd/system/hibernate.target" ]; then
 		LIB="/usr/lib"
 	else
 		LIB="/lib"
