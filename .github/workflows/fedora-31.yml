@@ -90,16 +90,17 @@ jobs:
     runs-on: ubuntu-latest
     container: fedora:31
     steps:
+      - name: Install build dependencies
+        run: |
+          dnf distro-sync -y
+          dnf install -y rpmdevtools gpg createrepo_c git
+
       - name: Checkout repository
         uses: actions/checkout@v2
         with:
           repository: StollD/repo-test
+          ref: master
           fetch-depth: 0
-
-      - name: Install build dependencies
-        run: |
-          dnf distro-sync -y
-          dnf install -y rpmdevtools gpg createrepo_c
 
       - name: Download artifacts
         uses: actions/download-artifact@v1
