@@ -129,13 +129,13 @@ jobs:
           done
 
       - name: Commit and push
-        uses: EndBug/add-and-commit@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_BOT_TOKEN }}
+        uses: github-actions-x/commit@v2.3
         with:
-          author_name: surfacebot
-          author_email: surfacebot@users.noreply.github.com
-          message: Update F31 repo
-          pattern: fedora/f31/*
-          force: false
-          path: .
+          github-token: ${{ secrets.GITHUB_BOT_TOKEN }}
+          push-branch: master
+          commit-message: Update Fedora 31 repo
+          force-add: true
+          rebase: true
+          files: fedora/f31/*
+          name: surfacebot
+          email: i.have.no.idea.what.this.is@set.to
