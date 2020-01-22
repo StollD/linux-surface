@@ -136,6 +136,6 @@ jobs:
           author_name: surfacebot
           author_email: surfacebot@users.noreply.github.com
           message: Update F31 repo
-          path: fedora/f31
-          pattern: *
-          force: false 
+          pattern: fedora/f31/*
+          force: false
+          path: .
