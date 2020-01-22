@@ -1,6 +1,6 @@
-on: [push]
-  # tags:
-  #   - 'fedora-31-*'
+on:
+ tags:
+    - 'fedora-31-*'
 
 name: Fedora 31
 
@@ -19,8 +19,9 @@ jobs:
     - name: Install build dependencies
       run: |
         dnf distro-sync -y
-        dnf install -y rpmdevtools rpm-sign 'dnf-command(builddep)'
-        dnf builddep -y pkg/fedora/kernel-surface/kernel-surface.spec
+        dnf install -y rpmdevtools rpm-sign wget
+        # dnf install -y rpmdevtools rpm-sign 'dnf-command(builddep)'
+        # dnf builddep -y pkg/fedora/kernel-surface/kernel-surface.spec
 
     - name: Setup secureboot certificate
       env:
