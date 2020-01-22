@@ -1,6 +1,7 @@
 on:
- tags:
-    - 'fedora-31-*'
+  push:
+    tags:
+      - 'fedora-31-*'
 
 name: Fedora 31
 
