@@ -99,6 +99,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: StollD/repo-test
+          token: ${{ secrets.GITHUB_BOT_TOKEN }}
           ref: master
           fetch-depth: 0
 
@@ -134,8 +135,8 @@ jobs:
           github-token: ${{ secrets.GITHUB_BOT_TOKEN }}
           push-branch: master
           commit-message: Update Fedora 31 repo
-          force-add: true
+          force-add: false
           rebase: true
           files: fedora/f31/*
           name: surfacebot
-          email: i.have.no.idea.what.this.is@set.to
+          email: surfacebot@users.noreply.github.com
