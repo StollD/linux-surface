@@ -93,11 +93,11 @@ jobs:
         with:
           repository: StollD/repo-test
           fetch-depth: 0
-    
-    - name: Install build dependencies
-      run: |
-        dnf distro-sync -y
-        dnf install -y rpmdevtools gpg createrepo_c
+
+      - name: Install build dependencies
+        run: |
+          dnf distro-sync -y
+          dnf install -y rpmdevtools gpg createrepo_c
 
       - name: Download artifacts
         uses: actions/download-artifact@v1
